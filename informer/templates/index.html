@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+  我的模板html内容
+  <br />{{ my_str }}
+  <br />{{ my_int }}
+  <br />{{ my_array }}
+  <br />{{ my_dict }}
+</body>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type=text/javascript>
+        $(function() {
+          $('a#button1').on('click', function(e) {
+            e.preventDefault()
+            $.getJSON('/background_process_test',
+                function(data) {
+              //do nothing
+            });
+            return false;
+          });
+        });
+</script>
+
+
+<div class='container'>
+    <h3>Button Name</h3>
+        <form>
+            <a href=# id=button1><button class='btn btn-default'>Click Here</button></a>
+        </form>
+
+</div>
+
+
+</html>
