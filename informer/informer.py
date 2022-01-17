@@ -1,33 +1,32 @@
-from flask import Flask, render_template
-app = Flask(__name__)
+# -*- coding: utf-8 -*-
+from .utils import load_yaml
+from .core import handshake, creat_tcp_scoket, creat_udp_scoket
+class Informer():
+    def __init__(self, config):
+        self.config = load_yaml(config)
+        self.mode = self.config.get('comm_mode')
+        self.target_ip, self.target_port = self.get_target_info(self.config)
 
-@app.route('/')
-def index():
-    # 往模板中传入的数据
-    my_str = 'Hello Word'
-    my_int = 10
-    my_array = [3, 4, 2, 1, 7, 9]
-    my_dict = {
-        'name': 'xiaoming',
-        'age': 18
-    }
-    return render_template('index.html',
-                           my_str=my_str,
-                           my_int=my_int,
-                           my_array=my_array,
-                           my_dict=my_dict
-                           )
+        """
+        key: message type
+        value: tcp/udp socket
+        """
+        self.conn_dict = {}
 
-#rendering the HTML page which has the button
-# @app.route('/json')
-# def json():
-#     return render_template('json.html')
+        self.message_keys = self.get_message_keys(self.config)
+        self.conn_dict = self.creat_sockets(self.message_keys, self.config)
 
-#background process happening without any refreshing
-@app.route('/background_process_test')
-def background_process_test():
-    print("Hello\n\n\n\n")
-    return ""
+    def get_target_info(self, config : dict):
+        target_ip = config.get('network_info').get('target_info').get('ip')
+        target_port = config.get('network_info').get('target_info').get('port')
+        return target_ip, target_port
 
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug = True)
+    def get_message_keys(self, config : dict) -> list:
+        return list(config.get('message_info').keys())
+
+    def creat_sockets(self, keys : str, config : dict) -> dict:
+        conn_dict = {}
+        for key in keys:
+            message_port = config.get('message_info').get()
+            conn_dict[key] = creat_tcp_scoket(self.target_ip, message_port)
+        return conn_dict
