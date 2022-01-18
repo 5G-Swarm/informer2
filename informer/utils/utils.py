@@ -13,22 +13,22 @@ import yaml
 #         data = jpeg.tobytes()
 #         return data
 
-def encode_sensor(v, w, c):
-    data = {'v':v, 'w':w, 'c':c}
-    data = json.dumps(data).encode()
-    return data
+# def encode_sensor(v, w, c):
+#     data = {'v':v, 'w':w, 'c':c}
+#     data = json.dumps(data).encode()
+#     return data
 
-def encode_message(data, robot_id, mtype='normal', pri=5):
-    data = {'Mtype':mtype, 'Pri':pri, 'Id':robot_id, 'Data':data}
-    data = json.dumps(data).encode()
-    return data
+# def encode_message(data, robot_id, mtype='normal', pri=5):
+#     data = {'Mtype':mtype, 'Pri':pri, 'Id':robot_id, 'Data':data}
+#     data = json.dumps(data).encode()
+#     return data
 
 def to_json(**kwargs):
     return json.dumps(kwargs)
     
-def encode_debug_message(messages):
-    data = json.dumps(messages).encode()
-    return data
+# def encode_debug_message(messages):
+#     data = json.dumps(messages).encode()
+#     return data
 
 def load_yaml(file_path) -> dict:
     with open(file_path, 'r', encoding="utf-8") as file:
