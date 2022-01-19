@@ -2,9 +2,7 @@
 from typing import Tuple
 import cv2
 import numpy as np
-
-def encode_img(img):
-    pass
+import json
 
 def encode_img(img, isGrey=False) -> bytes:
     if isGrey:
@@ -14,12 +12,17 @@ def encode_img(img, isGrey=False) -> bytes:
     data = jpeg.tobytes()
     return data
 
-def decode_img(data):
+def decode_img(data : bytes) -> np.ndarray:
     nparr = np.fromstring(data, np.uint8)
     img = cv2.imdecode(nparr,  cv2.IMREAD_COLOR)
-    # img = cv2.imdecode(data)
     return img
 
+def encode_dict(data : dict) -> bytes:
+    data = json.dumps(data).encode()
+    return data
+
+def decode_dict(data : bytes) -> dict:
+    return json.loads(data)
 class Message():
     def __init__(self, data):
         self.__data = data
@@ -27,6 +30,10 @@ class Message():
     def encode(self) -> Tuple[bool , bytes]:
         res = bytes()
         ok = False
+
+        if isinstance(self.__data, list) or isinstance(self.__data, tuple):
+            self.__data = np.array(self.__data).astype(np.float32)
+
         if isinstance(self.__data, str):
             res = self.__data.encode()
             ok = True
@@ -34,13 +41,40 @@ class Message():
             res = self.__data
             ok = True
         elif isinstance(self.__data, dict):
-            pass
+            res = encode_dict(self.__data)
+            ok = True
         elif isinstance(self.__data, np.ndarray):
             if self.__data.dtype == np.dtype('uint8'):
                 res = encode_img(self.__data)
                 ok = True
             else:
-                print('Unknown encoding numpy type:', self.__data.dtype)
+                res = self.__data.tobytes()
+                ok = True
+        else:
+            print('Unknown encoding type:', type(self.__data))
+        return ok, res
+
+    """
+    TODO
+    """
+    def decode(self, data_type):
+        res = None
+        ok = False
+        if data_type == 'str':
+            res = self.__data.decode()
+            ok = True
+        elif data_type == 'bytes':
+            res = self.__data
+            ok = True
+        elif data_type == 'dict':
+            res = decode_dict(self.__data)
+            ok = True
+        elif data_type == 'img':
+                res = decode_img(self.__data)
+                ok = True
+        elif data_type == 'array':
+            res = np.frombuffer(self.__data, np.float32)
+            ok = True
         else:
             print('Unknown encoding type:', type(self.__data))
         return ok, res

@@ -8,7 +8,9 @@ ifm = Informer(
     config = 'config_recv.yaml',
     )
     
-for _ in range(100):
+while True:
     img = ifm.recv_img()
-    cv2.imshow('URL2Image',img)
+    if img is None:
+        break
+    cv2.imshow('Image',img)
     cv2.waitKey(5)
