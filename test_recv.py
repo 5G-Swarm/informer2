@@ -11,6 +11,6 @@ ifm = Informer(
 while True:
     img = ifm.recv_img()
     if img is None:
-        break
+        continue
     cv2.imshow('Image',img)
     cv2.waitKey(5)
