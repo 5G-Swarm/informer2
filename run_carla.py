@@ -21,7 +21,6 @@ import cv2
 import time
 import copy
 import random
-import argparse
 import numpy as np
 
 from time import sleep
@@ -43,34 +42,14 @@ global_vel = 0
 global_vehicle= None
 global_plan_map = None
 global_plan_time = None
-state0 = None
-global_trajectory = None
 global_collision = False
 
-import socket
-UDP_IP = "127.0.0.1"
-UDP_PORT = 6666
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# import socket
+# UDP_IP = "127.0.0.1"
+# UDP_PORT = 6666
+# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 lidar_height = 2.5
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_name', type=str, default="run-carla-img-01", help='name of the dataset')
-parser.add_argument('--batch_size', type=int, default=1, help='size of the batches')
-parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
-parser.add_argument('--lr', type=float, default=3e-4, help='adam: learning rate')
-parser.add_argument('--weight_decay', type=float, default=5e-4, help='adam: weight_decay')
-parser.add_argument('--checkpoint_interval', type=int, default=500, help='interval between model checkpoints')
-parser.add_argument('--points_num', type=int, default=1, help='points number')
-parser.add_argument('--max_dist', type=float, default=25., help='max distance')
-parser.add_argument('--max_speed', type=float, default=10., help='max speed')
-parser.add_argument('--max_t', type=float, default=3., help='max time')
-parser.add_argument('--dt', type=float, default=0.05, help='discretization minimum time interval')
-# parser.add_argument('--vector_dim', type=int, default=8, help='vector dim')
-parser.add_argument('--vector_dim', type=int, default=64, help='vector dim')
-parser.add_argument('--passive', type=bool, default=False, help='passive run')
-parser.add_argument('--show', type=bool, default=False, help='show trajectory')
-opt = parser.parse_args()
 
 def collision_callback(data):
     global global_collision
@@ -81,6 +60,9 @@ def image_callback(data):
     array = np.frombuffer(data.raw_data, dtype=np.dtype("uint8")) 
     array = np.reshape(array, (data.height, data.width, 4)) # RGBA format
     global_img = array
+    """
+    send tcp img!
+    """
     ifm.send_img(global_img[...,:3])
 
 
@@ -147,7 +129,7 @@ def main():
     global_plan_map, destination = replan(agent, destination, copy.deepcopy(origin_map), spawn_points)
 
     vehicle.set_simulate_physics(True)
-    physics_control = vehicle.get_physics_control()
+    # physics_control = vehicle.get_physics_control()
 
     sensor_dict = {
         'camera':{
@@ -159,11 +141,11 @@ def main():
             # 'transform':carla.Transform(carla.Location(x=-3.0, y=0.0, z=6.0), carla.Rotation(pitch=-45)),
             'callback':view_image_callback,
             },
-        'lidar':{
-            # 'transform':carla.Transform(carla.Location(x=0.0, y=0.0, z=lidar_height)),
-            'transform':carla.Transform(carla.Location(x=0.5, y=0.0, z=lidar_height)),
-            'callback':lidar_callback,
-            },
+        # 'lidar':{
+        #     # 'transform':carla.Transform(carla.Location(x=0.0, y=0.0, z=lidar_height)),
+        #     'transform':carla.Transform(carla.Location(x=0.5, y=0.0, z=lidar_height)),
+        #     'callback':lidar_callback,
+        #     },
         'collision':{
             'transform':carla.Transform(carla.Location(x=0.0, y=0.0, z=0.0)),
             'callback':collision_callback,
