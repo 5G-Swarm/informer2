@@ -75,7 +75,12 @@ def __handshake(sock : socket.socket, is_tcp : bool, is_client : bool, target_ip
     
 
 def __tcp_client_handshake(sock : socket.socket, target_ip : str, target_port : int):
-    sock.connect((target_ip, target_port))
+    while True:
+        try:
+            sock.connect((target_ip, target_port))
+            break
+        except:
+            continue
     return sock, (target_ip, target_port)
 
 def __tcp_server_handshake(sock : socket.socket, target_port : int):

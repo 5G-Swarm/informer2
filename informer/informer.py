@@ -106,17 +106,27 @@ class Informer():
         img = decode_img(recv_data)
         return img
 
-    def send_img(self, data):
+    def send_img(self, data, wait : bool = True):
+        cnt = 0
         while True:
             if 'img' in self.conn_dict.keys():
                 if 'conn' in self.conn_dict['img'].keys():
                     break
+            if not wait:
+                print('CANNOT send img, ignore this img !')
+                return
+            cnt += 1
+            if cnt % 1000 == 0:
+                print('CANNOT send img, try to resend !')
             sleep(0.001)
 
         conn = self.conn_dict['img']['conn']
         message = Message(data)
         ok, sent_data = message.encode()
         if ok:
-            conn.sendall(str(len(sent_data)).encode())
-            recv_data = conn.recv(1024)
-            conn.sendall(sent_data)
+            try:
+                conn.sendall(str(len(sent_data)).encode())
+                recv_data = conn.recv(1024)
+                conn.sendall(sent_data)
+            except:
+                print('Send img failed, ignore this img !')
