@@ -50,7 +50,7 @@ def  __creat_socket_thread(key : str, config : dict):
     conn_dict = ConnDict()
     sock = __creat_tcp_scoket()
     is_tcp = config.get('message_info').get(key).get('is_tcp')
-    is_client = config.get('message_info').get(key).get('is_client')
+    is_client = config.get('role_info').get('is_client')
 
     target_ip = config.get('network_info').get('target_info').get('ip')
     target_port = config.get('message_info').get(key).get('port')
