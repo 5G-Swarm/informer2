@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package std_msgs;
+
+message Header {
+    uint32 seq      = 1;
+    time   stamp    = 2;
+    string frame_id = 3;
+}
+
+message time {
+    int64 sec  = 1;
+    int64 nsec = 2;
+}

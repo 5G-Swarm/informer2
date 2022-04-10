@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package carla_msgs;
+
+message CtrlCmd{
+    float throttle    = 1;
+    float steer       = 2;
+    float brake       = 3;
+    bool hand_brake   = 4;
+    bool  reverse     = 5;
+    bool  manual_gear_shift = 6;
+    uint32   gear     = 7;
+}

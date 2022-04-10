@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import socket
 import threading
+import random
 from typing import Tuple
 
 class Singleton():
@@ -84,7 +85,13 @@ def __tcp_client_handshake(sock : socket.socket, target_ip : str, target_port : 
     return sock, (target_ip, target_port)
 
 def __tcp_server_handshake(sock : socket.socket, target_port : int):
-    sock.bind(('0.0.0.0', target_port))
+    try:
+        sock.bind(('0.0.0.0', target_port))
+    except:
+        new_target_port = random.randint(10000,65536)
+        print('Port', target_port, 'already in use! Try to use port', new_target_port)
+        sock.bind(('0.0.0.0', new_target_port))
+
     sock.listen(5)
     conn, addr = sock.accept()
     return conn, addr

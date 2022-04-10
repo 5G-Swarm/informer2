@@ -9,7 +9,7 @@ class Informer():
         self.HEAD_LENGTH = 8
         self.config = load_yaml(config)
         self.is_client = self.config.get('role_info').get('is_client')
-        self.target_ip, self.target_port = self.get_target_info(self.config)
+        self.target_ip = self.get_target_info(self.config)
         
         """
         key: message type
@@ -48,10 +48,9 @@ class Informer():
             time.sleep(0.001)
 
 
-    def get_target_info(self, config : dict) -> Tuple[str , int]:
+    def get_target_info(self, config : dict) -> str:
         target_ip = config.get('network_info').get('target_info').get('ip')
-        target_port = config.get('network_info').get('target_info').get('port')
-        return target_ip, target_port
+        return target_ip
 
     def get_message_keys(self, config : dict) -> list:
         return list(config.get('message_info').keys())

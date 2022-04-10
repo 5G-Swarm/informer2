@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package cmd_msgs;
+
+message Cmd{
+    double v = 1;
+    double w = 2;
+}

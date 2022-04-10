@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package reg_msgs;
+
+message RegInfo{
+    string hostID    = 1;
+    string destID    = 2;
+    string key       = 3;
+    bool   is_server = 4;
+    int32  bind_port = 5 ;
+}
