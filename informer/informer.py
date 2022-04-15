@@ -61,7 +61,7 @@ class Informer():
 
     def wait_connection(self):
         cnt = 0
-        while self.message_keys != list(self.conn_dict.keys()):
+        while set(self.message_keys) - set(self.conn_dict.keys()) != set():
             cnt += 1
             unconn_keys = set(self.message_keys) - set(self.conn_dict.keys())
             if cnt % 1000 == 0:
