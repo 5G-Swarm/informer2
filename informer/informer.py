@@ -10,18 +10,20 @@ class Informer():
         self.config = load_yaml(config)
         self.is_client = self.config.get('role_info').get('is_client')
         self.target_ip = self.get_target_info(self.config)
-        
+        self.message_keys = self.get_message_keys(self.config)
         """
         key: message type
         value: tcp/udp socket
         """
         self.conn_dict = ConnDict()
+        self.trd_list = {}
 
-        self.trd_list = []
+        self.heart_heat_trd = threading.Thread(
+            target = self.heart_heat_func, args=()
+        )
+        # self.heart_heat_trd.start()
 
-        self.message_keys = self.get_message_keys(self.config)
         creat_sockets(self.message_keys, self.config)
-
         self.wait_connection()
 
         # start receive threads
@@ -35,7 +37,27 @@ class Informer():
                 target = receive_func, args=(self,)
             )
             recv_thread.start()
-            self.trd_list.append(recv_thread)
+            self.trd_list[key] = recv_thread
+
+    def heart_heat_func(self):
+        while True:
+            for key in self.message_keys:
+                if key not in self.conn_dict.keys():
+                    creat_sockets([key], self.config)
+
+                if key not in self.trd_list.keys():
+                    try:
+                        receive_func = getattr(self.__class__, key+'_recv')
+                    except AttributeError:
+                        print(self.__class__.__name__, 'has no attribute called', key+'_recv')
+                        continue
+                    recv_thread = threading.Thread(
+                        target = receive_func, args=(self,)
+                    )
+                    recv_thread.start()
+                    self.trd_list[key] = recv_thread
+
+            time.sleep(0.1)
 
     def wait_connection(self):
         cnt = 0
@@ -46,7 +68,6 @@ class Informer():
                 for key in unconn_keys:
                     print(key, 'is not connected !')
             time.sleep(0.001)
-
 
     def get_target_info(self, config : dict) -> str:
         target_ip = config.get('network_info').get('target_info').get('ip')
@@ -63,8 +84,13 @@ class Informer():
         conn = self.conn_dict[key]['conn']
         try:
             conn.sendall(data)
-        except BrokenPipeError:
+        except:
             print('Send error ! Connection broken !')
+            try:
+                del self.trd_list[key]
+                del self.conn_dict[key]
+            except:
+                pass
 
     def recv(self, key : str, func : Callable):
         # print('start to recv ...')
@@ -98,10 +124,3 @@ class Informer():
                     func(send_data[:data_length])
                     send_data = send_data[data_length:]
                     data_length = 0
-
-    def close(self):
-        self._cls_trd = True
-        for i in self.trd_list:
-            del i
-        for i in self.message_socket:
-            i.close()
