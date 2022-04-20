@@ -4,30 +4,6 @@ import threading
 import random
 from typing import Tuple
 
-class Singleton():
-    def __init__(self, cls):
-        self._cls = cls
-        self._instance = {}
-    def __call__(self):
-        if self._cls not in self._instance:
-            self._instance[self._cls] = self._cls()
-        return self._instance[self._cls]
-
-@Singleton
-class ConnDict():
-    def __init__(self):
-        self.__dict = {}
-
-    def __getitem__(self, key):
-        return self.__dict[key]
-
-    def __setitem__(self, key, value):
-        self.__dict[key] = value
-    
-    def keys(self):
-        return list(self.__dict.keys())
-
-
 def __creat_tcp_scoket() -> socket.socket:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -37,19 +13,18 @@ def __creat_udp_scoket() -> socket.socket:
     sock =  socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     return sock
 
-def creat_sockets(keys : str, config : dict):
+def creat_sockets(keys : str, config : dict, conn_dict : dict):
     for key in keys:
         """
         Not blocking the main process
         """
         recv_thread = threading.Thread(
                 target = __creat_socket_thread,
-                args = (key, config)
+                args = (key, config, conn_dict)
                 )
         recv_thread.start()
 
-def  __creat_socket_thread(key : str, config : dict):
-    conn_dict = ConnDict()
+def  __creat_socket_thread(key : str, config : dict, conn_dict : dict):
     sock = __creat_tcp_scoket()
     is_tcp = config.get('message_info').get(key).get('is_tcp')
     is_client = config.get('role_info').get('is_client')

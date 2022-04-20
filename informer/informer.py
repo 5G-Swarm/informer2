@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-from typing import Tuple, Callable
+from re import S
+from typing import Callable
 import threading
 import time
 from .utils import load_yaml
-from .core import creat_sockets, ConnDict
+from .core import creat_sockets
+import logging
+
 class Informer():
     def __init__(self, config):
         self.HEAD_LENGTH = 8
         self.config = load_yaml(config)
+        self.debug_mode = self.config.get('debug_mode')
         self.is_client = self.config.get('role_info').get('is_client')
         self.target_ip = self.get_target_info(self.config)
         self.message_keys = self.get_message_keys(self.config)
@@ -15,29 +19,37 @@ class Informer():
         key: message type
         value: tcp/udp socket
         """
-        self.conn_dict = ConnDict()
+        self.conn_dict = {}
         self.trd_list = {}
+
+        logging.basicConfig(filename='log.log', format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        logging.getLogger('').addHandler(console)
 
         self.heart_heat_trd = threading.Thread(
             target = self.heart_heat_func, args=()
         )
         # self.heart_heat_trd.start()
-
-        creat_sockets(self.message_keys, self.config)
+        if self.debug_mode: logging.info('[1] Start to creat sockets ...')
+        creat_sockets(self.message_keys, self.config, self.conn_dict)
+        if self.debug_mode: logging.info('[3] Start to wait connection ...')
         self.wait_connection()
-
+        if self.debug_mode: logging.info('[5] Connection success, start to receive message ...')
         # start receive threads
         for key in self.message_keys:
             try:
                 receive_func = getattr(self.__class__, key+'_recv')
             except AttributeError:
-                print(self.__class__.__name__, 'has no attribute called', key+'_recv')
+                logging.info(str(self.__class__.__name__)+ ' has no attribute called '+ key +'_recv')
                 continue
             recv_thread = threading.Thread(
                 target = receive_func, args=(self,)
             )
             recv_thread.start()
             self.trd_list[key] = recv_thread
+
+        if self.debug_mode: logging.info('[9] Leave __init__, start to work ...')
 
     def heart_heat_func(self):
         while True:
@@ -49,7 +61,7 @@ class Informer():
                     try:
                         receive_func = getattr(self.__class__, key+'_recv')
                     except AttributeError:
-                        print(self.__class__.__name__, 'has no attribute called', key+'_recv')
+                        logging.info(str(self.__class__.__name__)+ ' has no attribute called '+ key +'_recv')
                         continue
                     recv_thread = threading.Thread(
                         target = receive_func, args=(self,)
@@ -64,9 +76,9 @@ class Informer():
         while set(self.message_keys) - set(self.conn_dict.keys()) != set():
             cnt += 1
             unconn_keys = set(self.message_keys) - set(self.conn_dict.keys())
-            if cnt % 1000 == 0:
+            if cnt % 2000 == 0:
                 for key in unconn_keys:
-                    print(key, 'is not connected !')
+                    logging.info(key + ' is not connected !')
             time.sleep(0.001)
 
     def get_target_info(self, config : dict) -> str:
@@ -77,15 +89,15 @@ class Informer():
         return list(config.get('message_info').keys())
 
     def send(self, data, key : str):
-        # print("data len:", len(data))
         data_len = len(data).to_bytes(self.HEAD_LENGTH, 'big')
         data = data_len + data
 
         conn = self.conn_dict[key]['conn']
         try:
             conn.sendall(data)
+            if self.debug_mode: logging.info('[c] Key '+ key +' send data len:' + str(len(data)))
         except:
-            print('Send error ! Connection broken !')
+            logging.info('Send '+ key + ' error ! Connection broken !')
             try:
                 del self.trd_list[key]
                 del self.conn_dict[key]
@@ -93,7 +105,7 @@ class Informer():
                 pass
 
     def recv(self, key : str, func : Callable):
-        # print('start to recv ...')
+        if self.debug_mode: logging.info('[a] Start to recv key: ' + key + ' ...')
         send_data = bytes()
         data_cache = bytes()
         data_length = 0
@@ -101,6 +113,7 @@ class Informer():
         while True:
             conn = self.conn_dict[key]['conn']
             data = conn.recv(65535)
+            if self.debug_mode and len(data) > 0: logging.info('[b] Key '+ key + ' recv data len: '+ str(len(data)))
             if len(data) == 0: continue
             send_data += data
 
@@ -121,6 +134,7 @@ class Informer():
                     data_cache += send_data
                     send_data = bytes()
                 else:
+                    if self.debug_mode: logging.info('[d] Key: '+ key + ' recv over, go to function: parse_'+key)
                     func(send_data[:data_length])
                     send_data = send_data[data_length:]
                     data_length = 0
