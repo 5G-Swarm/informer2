@@ -3,6 +3,7 @@ import socket
 import threading
 import random
 from typing import Tuple
+from ..utils import SocketStatus
 
 def __creat_tcp_scoket() -> socket.socket:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -13,18 +14,18 @@ def __creat_udp_scoket() -> socket.socket:
     sock =  socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     return sock
 
-def creat_sockets(keys : str, config : dict, conn_dict : dict):
+def creat_sockets(keys : str, config : dict, conn_dict : dict, working_dict : dict):
     for key in keys:
         """
         Not blocking the main process
         """
         recv_thread = threading.Thread(
                 target = __creat_socket_thread,
-                args = (key, config, conn_dict)
+                args = (key, config, conn_dict, working_dict)
                 )
         recv_thread.start()
 
-def  __creat_socket_thread(key : str, config : dict, conn_dict : dict):
+def  __creat_socket_thread(key : str, config : dict, conn_dict : dict, working_dict : dict):
     sock = __creat_tcp_scoket()
     is_tcp = config.get('message_info').get(key).get('is_tcp')
     is_client = config.get('role_info').get('is_client')
@@ -32,11 +33,17 @@ def  __creat_socket_thread(key : str, config : dict, conn_dict : dict):
     target_ip = config.get('network_info').get('target_info').get('ip')
     target_port = config.get('message_info').get(key).get('port')
 
+    conn_dict[key] = {}
+    # conn_dict[key]['conn'] = None
+    conn_dict[key]['addr'] = None
+    conn_dict[key]['status'] = SocketStatus.UNCONN
+
     conn, addr = __handshake(sock, is_tcp, is_client, target_ip, target_port)
 
-    conn_dict[key] = {}
     conn_dict[key]['conn'] = conn
     conn_dict[key]['addr'] = addr
+    conn_dict[key]['status'] = SocketStatus.HANDSHAKED
+    working_dict[key] = True
 
 def __handshake(sock : socket.socket, is_tcp : bool, is_client : bool, target_ip : str, target_port : int):
     if is_tcp and is_client:

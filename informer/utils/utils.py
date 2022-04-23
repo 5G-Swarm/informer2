@@ -1,36 +1,22 @@
 # -*- coding: utf-8 -*-
-import json
+import os
 import yaml
-# from .config import PORT_DICT
+from enum import Enum
 
-# if 'vision' in PORT_DICT.keys():
-#     import cv2
-#     def encode_img(img, isGrey=False):
-#         if isGrey:
-#             img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-#         img = cv2.resize(img, (img.shape[1],img.shape[0]), interpolation=cv2.INTER_AREA)
-#         ret, jpeg=cv2.imencode('.jpg', img)
-#         data = jpeg.tobytes()
-#         return data
-
-# def encode_sensor(v, w, c):
-#     data = {'v':v, 'w':w, 'c':c}
-#     data = json.dumps(data).encode()
-#     return data
-
-# def encode_message(data, robot_id, mtype='normal', pri=5):
-#     data = {'Mtype':mtype, 'Pri':pri, 'Id':robot_id, 'Data':data}
-#     data = json.dumps(data).encode()
-#     return data
-
-def to_json(**kwargs):
-    return json.dumps(kwargs)
-    
-# def encode_debug_message(messages):
-#     data = json.dumps(messages).encode()
-#     return data
+class SocketStatus(Enum):
+    INIT = 1
+    UNCONN = 2
+    HANDSHAKED = 3
+    # RECVING = 4
+    # SENDING = 5
 
 def load_yaml(file_path) -> dict:
     with open(file_path, 'r', encoding="utf-8") as file:
         result = yaml.unsafe_load(file)
     return result
+
+def test_connection(ip : str):
+    f = os.popen('ping ' + ip + ' -c 1 -W 1')
+    files = f.read()
+    lines = files.split('\n')
+    return lines[1][:8]=='64 bytes'

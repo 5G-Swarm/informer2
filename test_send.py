@@ -12,6 +12,7 @@ def parse_cmd(message):
     cmd.ParseFromString(message)
     execute_cmd(cmd)
 
+
 class Client(Informer):
     def send_img(self, message):
         self.send(message, 'img')
@@ -37,5 +38,9 @@ success, img = video_reader.read()
 while success:
     callback_img(img)
     success, img = video_reader.read()
+    # for key in ifm.conn_dict.keys():
+    #     print(key, ifm.conn_dict[key]['status'])
+    # print(ifm.working_dict.keys(), ifm.starting_dict.keys())
+    # sleep(0.5)
 
 video_reader.release()

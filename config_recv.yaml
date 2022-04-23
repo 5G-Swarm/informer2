@@ -1,3 +1,5 @@
+debug_mode: False
+
 role_info:
     is_client: True
     id: 'edge-01'
