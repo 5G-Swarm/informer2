@@ -9,10 +9,16 @@ from .core import creat_sockets
 import logging
 
 class Informer():
-    def __init__(self, config):
+    def __init__(self, config, robot_id = None):
         self.HEAD_LENGTH = 8
         self.config = load_yaml(config)
+        if robot_id is not None:
+            self.config['robot_id'] = robot_id
+            self.robot_id = robot_id
+        else:
+            self.robot_id = self.config['robot_id']
         self.debug_mode = self.config.get('debug_mode')
+        self.use_log = self.config.get('use_log')
         self.is_client = self.config.get('role_info').get('is_client')
         self.target_ip = self.get_target_info(self.config)
         self.message_keys = self.get_message_keys(self.config)
@@ -22,47 +28,24 @@ class Informer():
         self.working_dict = {}
         self.starting_dict = {}
 
-        os.makedirs('logs', exist_ok=True)
-        logging.basicConfig(filename='logs/log_'+sys.argv[0]+'.log', format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
-        console = logging.StreamHandler()
-        console.setLevel(logging.INFO)
-        logging.getLogger('').addHandler(console)
+        if self.use_log:
+            os.makedirs('logs', exist_ok=True)
+            logging.basicConfig(filename='logs/log_'+sys.argv[0]+'.log', format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+            console = logging.StreamHandler()
+            console.setLevel(logging.INFO)
+            logging.getLogger('').addHandler(console)
 
-        logging.info('Connecting to IP: ' + self.target_ip)
-        res = test_connection(self.target_ip)
-        if res:
-            logging.info('\033[32mConnection success !\033[0m')
-        else:
-            logging.error('\033[31mConnection fail !\033[0m')
+            logging.info('Connecting to IP: ' + self.target_ip)
+            res = test_connection(self.target_ip)
+            if res:
+                logging.info('\033[32mConnection success !\033[0m')
+            else:
+                logging.error('\033[31mConnection fail !\033[0m')
 
         self.heartbeat_trd = threading.Thread(
             target = self.heartbeat_func, args=()
         )
         self.heartbeat_trd.start()
-        # block the main thread
-        self.wait_connection(self.message_keys)
-        """
-        if self.debug_mode: logging.info('[1] Start to creat sockets ...')
-        creat_sockets(self.message_keys, self.config, self.conn_dict, self.working_dict)
-        if self.debug_mode: logging.info('[3] Start to wait connection ...')
-        # self.wait_connection(self.message_keys)
-        if self.debug_mode: logging.info('[5] Connection success, start to receive message ...')
-        # start receive threads
-        for key in self.message_keys:
-            try:
-                receive_func = getattr(self.__class__, key+'_recv')
-            except AttributeError:
-                logging.info(str(self.__class__.__name__)+ ' has no attribute called '+ key +'_recv')
-                continue
-            recv_thread = threading.Thread(
-                target = receive_func, args=(self,)
-            )
-            recv_thread.start()
-            self.trd_list[key] = recv_thread
-            # self.conn_dict[key]['status'] = SocketStatus.RECVING
-
-        if self.debug_mode: logging.info('[9] Leave __init__, start to work ...')
-        """
 
     def start_func(self, key : str):
         creat_sockets([key], self.config, self.conn_dict, self.working_dict)
@@ -94,7 +77,6 @@ class Informer():
                     if key in self.starting_dict.keys(): continue
                     self.starting_dict[key] = True
                     self.start_key(key)
-
             time.sleep(0.001)
             cnt += 1
             if cnt > 3001:
@@ -103,12 +85,13 @@ class Informer():
                     self.report_status()
 
     def report_status(self):
-        logging.info('')
-        logging.info('\033[36mConnection Status:\033[0m')
-        for key in self.conn_dict.keys():
-            logging.info('\033[33m' + key + ' : ' + str(self.conn_dict[key]['status']) + '\033[0m')
-        logging.info('\033[32mWorking keys: ' + str(list(self.working_dict.keys())) + '\033[0m')
-        logging.info('\033[31mStarting keys: ' + str(list(self.starting_dict.keys())) + '\033[0m')
+        if self.use_log:
+            logging.info('')
+            logging.info('\033[36mConnection Status:\033[0m')
+            for key in self.conn_dict.keys():
+                logging.info('\033[33m' + key + ' : ' + str(self.conn_dict[key]['status']) + '\033[0m')
+            logging.info('\033[32mWorking keys: ' + str(list(self.working_dict.keys())) + '\033[0m')
+            logging.info('\033[31mStarting keys: ' + str(list(self.starting_dict.keys())) + '\033[0m')
 
     def wait_connection(self, keys):
         cnt = 0
@@ -117,7 +100,7 @@ class Informer():
             unconn_keys = set(self.message_keys) - set(self.conn_dict.keys())
             if cnt % 2000 == 0:
                 for key in unconn_keys:
-                    logging.info(key + ' is not connected !')
+                    if self.use_log: logging.info(key + ' is not connected !')
             time.sleep(0.001)
 
     def get_target_info(self, config : dict) -> str:
@@ -134,9 +117,13 @@ class Informer():
         try:
             conn = self.conn_dict[key]['conn']
             conn.sendall(data)
-            if self.debug_mode: logging.info('[c] Key '+ key +' send data len:' + str(len(data)))
+            if self.debug_mode:
+                if self.use_log: logging.info('[c] Key '+ key +' send data len:' + str(len(data)))
         except:
             # logging.info('Send '+ key + ' error ! Connection broken !')
+            # heartbeat thread is not ready, but send first
+            if key not in self.conn_dict.keys():
+                self.conn_dict[key] = {}
             self.conn_dict[key]['status'] = SocketStatus.UNCONN
             self.conn_dict[key]['conn'] = None
             self.conn_dict[key]['addr'] = None
@@ -147,7 +134,8 @@ class Informer():
                 pass
 
     def recv(self, key : str, func : Callable):
-        if self.debug_mode: logging.info('[a] Start to recv key: ' + key + ' ...')
+        if self.debug_mode: 
+            if self.use_log: logging.info('[a] Start to recv key: ' + key + ' ...')
         send_data = bytes()
         data_cache = bytes()
         data_length = 0
@@ -155,7 +143,8 @@ class Informer():
         while True:
             conn = self.conn_dict[key]['conn']
             data = conn.recv(65535)
-            if self.debug_mode and len(data) > 0: logging.info('[b] Key '+ key + ' recv data len: '+ str(len(data)))
+            if self.debug_mode and len(data) > 0:
+                if self.use_log: logging.info('[b] Key '+ key + ' recv data len: '+ str(len(data)))
             if len(data) == 0:
                 break
             send_data += data
@@ -177,8 +166,9 @@ class Informer():
                     data_cache += send_data
                     send_data = bytes()
                 else:
-                    if self.debug_mode: logging.info('[d] Key: '+ key + ' recv over, go to function: parse_'+key)
-                    func(send_data[:data_length])
+                    if self.debug_mode:
+                        if self.use_log: logging.info('[d] Key: '+ key + ' recv over, go to function: parse_'+key)
+                    func(send_data[:data_length], self.robot_id)
                     send_data = send_data[data_length:]
                     data_length = 0
 

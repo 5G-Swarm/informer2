@@ -1,13 +1,18 @@
 from time import sleep
+import random
 from informer import Informer
 from proto.python_out import cmd_msgs_pb2
 import cv2
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", type=int, help="robot id")
+args = parser.parse_args()
 
 def execute_cmd(cmd):
     print(cmd.v, cmd.w)
 
-def parse_cmd(message):
+def parse_cmd(message, robot_id):
     cmd = cmd_msgs_pb2.Cmd()
     cmd.ParseFromString(message)
     execute_cmd(cmd)
@@ -22,6 +27,7 @@ class Client(Informer):
 
 ifm = Client(
     config = 'config.yaml',
+    robot_id = args.n
     )
 
 def callback_img(img):

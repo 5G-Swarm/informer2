@@ -31,7 +31,8 @@ def  __creat_socket_thread(key : str, config : dict, conn_dict : dict, working_d
     is_client = config.get('role_info').get('is_client')
 
     target_ip = config.get('network_info').get('target_info').get('ip')
-    target_port = config.get('message_info').get(key).get('port')
+    target_port = config.get('message_info').get(key).get('port') + config.get('robot_id')
+    # print('target_port', target_port, config.get('robot_id'))
 
     conn_dict[key] = {}
     # conn_dict[key]['conn'] = None
