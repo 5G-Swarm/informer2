@@ -89,3 +89,25 @@ ifm = Client(
 # 其他写法和边缘端完全一致
 # 如果要中转数据，就创2个通讯实例，互相传递消息，见https://github.com/5G-Swarm/ros-edge-transfer/blob/main/scripts/edge-vehicle.py
 ```
+
+#### 如何兼容ROS
+```python
+from io import BytesIO
+from geometry_msgs.msg import Point
+
+# 假设你的ROS message类型是这个
+p = Point(x=2, y=4)
+print(p)
+
+# 发送端
+buff = BytesIO()
+p.serialize(buff)
+# 可以将这个二进制直接通过send_xxx发送
+serialized_bytes = buff.getvalue()
+
+# 接收端
+p2 = Point()
+# 可以在parse_xxx中将这个二进制重新转换回ROS message
+p2.deserialize(serialized_bytes)
+print(p2)
+```
