@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple
-import cv2
+try:
+    import cv2
+except:
+    print('Cannot import cv2 !')
 import numpy as np
 import json
 
